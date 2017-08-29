@@ -1,6 +1,22 @@
 # -*- coding: utf-8 -*-
 import sys
-sys.path.insert(0, 'e:/test/myweb')
+import platform
+
+#判断操作系统
+#如果是windows系统，就用'E:/test/myweb/db/myweb.db'
+#如果是ubuntu，就用"/test/myweb/db/myweb.db"
+sysstr = platform.system()
+if(sysstr =="Windows"):
+#print ("Call Windows tasks")
+    sys.path.insert(0, 'e:/test/myweb')
+elif(sysstr == "Linux"):
+#print ("Call Linux tasks")
+    sys.path.insert(0, '/test/myweb')
+else:
+#print ("Other System tasks")
+    sys.path.insert(0, '/test/myweb') 
+    
+
 import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'myweb.settings'
 # Scrapy settings for mybot project

@@ -25,7 +25,8 @@ class MybotPipeline(object):
                 for k in temp_name_list:
                     #判断是否为新分析师，如果是新的话，需要在analyst中新建一个分析师对象
                     print Analyst.objects.filter(name = k,company=item["company"])
-                    print k,item["company"]
+                    #print Analyst.objects.filter(name = k,company=item["company"])
+                    #print k,item["company"]
                     #os.system("pause")
                     if len(Analyst.objects.filter(name = k,company=item["company"]))==0:
 
