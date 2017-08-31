@@ -24,7 +24,6 @@ class MybotPipeline(object):
                 temp_name_list = item["name"].split(tem)
                 for k in temp_name_list:
                     #判断是否为新分析师，如果是新的话，需要在analyst中新建一个分析师对象
-                    print Analyst.objects.filter(name = k,company=item["company"])
                     #print Analyst.objects.filter(name = k,company=item["company"])
                     #print k,item["company"]
                     #os.system("pause")
@@ -38,7 +37,8 @@ class MybotPipeline(object):
                                 date = item["date"],
                                 title=item["title"],
                                 company=item["company"],
-                                name = k
+                                name = k,
+								content = item["content"],
                             ).save()
             else:
                 item.save()
@@ -61,7 +61,8 @@ class MybotPipeline(object):
                     date = t.date,
                     title=t.title,
                     company=t.company,
-                    name=t.name
+                    name=t.name,
+					content = t.content,
                 ).save()
         print "Scrapy_C更新成功！"
 

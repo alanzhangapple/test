@@ -20,6 +20,7 @@ class Scrapy_B(models.Model):
     
     company = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
+    content = models.TextField(blank=True, null=True,verbose_name = "ICG")#记录报告内容
 
 class Scrapy_C(models.Model):
     code = models.CharField(max_length=32)  
@@ -28,7 +29,8 @@ class Scrapy_C(models.Model):
     title = models.CharField(max_length=100)
     company = models.CharField(max_length=100,verbose_name = "ICG")
     name = models.CharField(max_length=100)
-
+    content = models.TextField(blank=True, null=True,verbose_name = "ICG")#记录报告内容
+    
 class Scrapy_D(models.Model):
     #记录研报的股票价格、时间、各个区间的价格明细
     code = models.CharField(max_length=32)  
@@ -37,6 +39,10 @@ class Scrapy_D(models.Model):
     title = models.CharField(max_length=100)
     company = models.CharField(max_length=100,default = "ICG")
     name = models.CharField(max_length=100,default = "ICG")
+    content = models.TextField(blank=True, null=True,verbose_name = "ICG")#记录报告内容
+    
+    boolean_str = models.IntegerField(default = 1)#标记股票是否参加计算，1表示参加，0表示不参加
+    
     
     #记录价格信息，如果时间是周末，则记录上个周五的价格
     price_publish_date = models.FloatField(default = 0.0)#发布时候的价格
@@ -44,18 +50,22 @@ class Scrapy_D(models.Model):
     delta_30_date = models.DateField(default=datetime.datetime.now().date())#30天后的时间
     price_delta_30_date = models.FloatField(default = 0.0)#30天后的股价
     charge_delta_30_date = models.FloatField(default = 0.0)#30天后的涨幅
+    hightest_price_delta_30_date = models.FloatField(default = 0.0)#30天内价格的最高股价
     
     delta_60_date = models.DateField(default=datetime.datetime.now().date())#60天后的时间
     price_delta_60_date = models.FloatField(default = 0.0)#60天后的股价
     charge_delta_60_date = models.FloatField(default = 0.0)#60天后的涨跌
-
+    hightest_price_delta_60_date = models.FloatField(default = 0.0)#60天内价格的最高股价
+    
     delta_90_date = models.DateField(default=datetime.datetime.now().date())#90天后的时间
     price_delta_90_date = models.FloatField(default = 0.0)#90天后的股价
     charge_delta_90_date = models.FloatField(default = 0.0)#90天后的涨跌
-
+    hightest_price_delta_90_date = models.FloatField(default = 0.0)#90天内价格的最高股价
+    
     delta_180_date = models.DateField(default=datetime.datetime.now().date())#180天后的时间
     price_delta_180_date = models.FloatField(default = 0.0)#180天后的股价
     charge_delta_180_date = models.FloatField(default = 0.0)#180天后的涨跌
+    hightest_price_delta_180_date = models.FloatField(default = 0.0)#180天内价格的最高股价
     
 class Stock_base(models.Model):
     code = models.CharField(max_length=32)
