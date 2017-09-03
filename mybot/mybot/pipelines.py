@@ -38,7 +38,7 @@ class MybotPipeline(object):
                                 title=item["title"],
                                 company=item["company"],
                                 name = k,
-								content = item["content"],
+                                content = item["content"],
                             ).save()
             else:
                 item.save()
@@ -62,7 +62,7 @@ class MybotPipeline(object):
                     title=t.title,
                     company=t.company,
                     name=t.name,
-					content = t.content,
+                    content = t.content,
                 ).save()
         print "Scrapy_C更新成功！"
 

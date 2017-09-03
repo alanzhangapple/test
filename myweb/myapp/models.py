@@ -178,9 +178,16 @@ class Analyst_power_today(models.Model):
     company = models.CharField(max_length=32) 
     
     power_30 = models.FloatField()
+    power_30_high = models.FloatField(default = 0.0)#30天最高涨幅平均值
+    
     power_60 = models.FloatField()
+    power_60_high = models.FloatField(default = 0.0)#60天最高涨幅平均值
+    
     power_90 = models.FloatField()
+    power_90_high = models.FloatField(default = 0.0)#90天最高涨幅平均值
+    
     power_180 = models.FloatField()
+    power_180_high = models.FloatField(default = 0.0)#180天最高涨幅平均值
     
 
     

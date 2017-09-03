@@ -9,16 +9,34 @@ from datetime import timedelta
 import time
 from django.db.models import Avg
 # Create your views here.
+import os
+
+import platform
+
+#判断操作系统
+#如果是windows系统，就用'r'sqlite:///E:\test\myweb\db\myweb.db''
+#如果是ubuntu，就用"r'sqlite:////test/myweb/db/myweb.db"
+sysstr = platform.system()
+if(sysstr =="Windows"):
+#print ("Call Windows tasks")
+    db_path = r'sqlite:///E:\test\myweb\db\myweb.db'
+elif(sysstr == "Linux"):
+#print ("Call Linux tasks")
+    db_path = r'sqlite:////test/myweb/db/myweb.db'
+else:
+#print ("Other System tasks")
+    db_path = r'sqlite:////test/myweb/db/myweb.db'
+
 def stock_base_view(request):
     
     #获取数据库操作引擎
     #1. 更新股票档案数据库
     #2. 更细股票每天的涨跌幅数据
-    engine = create_engine(r'sqlite:///E:\test\myweb\db\myweb.db')
+    engine = create_engine(db_path)
     df = ts.get_stock_basics()
     
     #先清空数据，然后再添加
-    print Stock_base.objects.all().count()
+    #print Stock_base.objects.all().count()
     Stock_base.objects.all().delete()
     df.to_sql('myapp_stock_base',engine,if_exists='append')
     result_message = "添加成功！"
@@ -40,9 +58,17 @@ def Analyst_power_today_view(request):
                                 company = t[0].company,
                                 
                                 power_30 = t.aggregate(Avg('charge_delta_30_date'))["charge_delta_30_date__avg"],
+                                power_30_high = t.aggregate(Avg('hightest_price_delta_30_date'))["hightest_price_delta_30_date__avg"],
+                                
                                 power_60 = t.aggregate(Avg('charge_delta_60_date'))["charge_delta_60_date__avg"],
+                                power_60_high = t.aggregate(Avg('hightest_price_delta_60_date'))["hightest_price_delta_60_date__avg"],
+                                
                                 power_90 = t.aggregate(Avg('charge_delta_90_date'))["charge_delta_90_date__avg"],
+                                power_90_high = t.aggregate(Avg('hightest_price_delta_90_date'))["hightest_price_delta_90_date__avg"],
+                                
                                 power_180 = t.aggregate(Avg('charge_delta_180_date'))["charge_delta_180_date__avg"],
+                                power_180_high = t.aggregate(Avg('hightest_price_delta_180_date'))["hightest_price_delta_180_date__avg"],
+                                
                                 ).save()
     end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     result_message = "添加成功！开始时间："+"\n"+start_time+"\n"+"结束时间："+end_time
@@ -73,7 +99,31 @@ def duz(a,b):
         return 0
     else:
         return a/b-1
+
+        
+        
+def max_price(need_price_data,code,publish_date,delta):
+    #计算时间间隔内股票的最高价格，如30天以内，最高的价格
     
+    last_date = publish_date + timedelta(days = delta)
+    date_publish_weekday = last_date.weekday()
+    price_data =[0]
+    #如果遇到周六周日，统一记作周五
+    if date_publish_weekday == 6:
+        last_date = last_date-datetime.timedelta(days = 2 )
+
+    if date_publish_weekday == 5:
+        last_date = last_date-datetime.timedelta(days = 1 )
+    
+
+    for i in need_price_data:
+        if i["code"]== code and i["date"] >= publish_date.strftime("%Y-%m-%d")  and i["date"] <= last_date.strftime("%Y-%m-%d"):
+            price_data.append(i["close"])
+        else:
+            #如果查不到股票价格，价格就是0
+            pass
+            
+    return max(price_data)
 def comupter_delta(need_price_data,code,publish_date,delta):
     #计算间隔时间的股票价格，如30天之后的价格
     #input：股票编码合并数据，股票编码，发布时间，延迟时间
@@ -88,14 +138,13 @@ def comupter_delta(need_price_data,code,publish_date,delta):
 
     if date_publish_weekday == 5:
         last_date = last_date-datetime.timedelta(days = 1 )
-    
+    #如果查不到股票价格，价格就是0
+    price_data = 0
 
     for i in need_price_data:
         if i["code"]== code and i["date"]==last_date.strftime("%Y-%m-%d"):
             price_data = i["close"]
-        else:
-            #如果查不到股票价格，价格就是0
-            price_data = 0
+
     return price_data
     
 def ArticleComputer_view(request):
@@ -113,11 +162,12 @@ def ArticleComputer_view(request):
     
     #查询所有需要插入的价格，先看是否有相同数据，有的话则删除
     t = Scrapy_D.objects.filter(title__in = Scrapy_B_title_list)
-    print "需要删除数据条数：",t.count()
+
     t.delete()
 
     for k in Scrapy_B.objects.all():
-        print k.code,k.name
+        #print k.code,k.name
+
         #price_publish = comupter_delta(k.code,k.date,0)#发布日期价格
         Scrapy_D(
                     code = k.code,
@@ -131,19 +181,23 @@ def ArticleComputer_view(request):
                     delta_30_date = k.date + timedelta(days = 30),
                     price_delta_30_date = 0,#从发布日期往后推30天
                     charge_delta_30_date = 0, #30天后涨跌幅
+                    hightest_price_delta_30_date=0,#30天后最高涨跌幅
                     
                     delta_60_date = k.date + timedelta(days = 60),
                     price_delta_60_date = 0,#从发布日期往后推60天
                     charge_delta_60_date = 0,#60天后涨跌幅
+                    hightest_price_delta_60_date=0,#60天后最高涨跌幅
                     
                     delta_90_date = k.date + timedelta(days = 90),
                     price_delta_90_date = 0,#从发布日期往后推90天
-                    charge_delta_90_date = 0,
-                    #90天后涨跌幅
+                    charge_delta_90_date = 0,#90天后涨跌幅
+                    hightest_price_delta_90_date=0,#90天后最高涨跌幅
+                    
                     
                     delta_180_date = k.date + timedelta(days = 180),
                     price_delta_180_date = 0,#从发布日期往后推180天
                     charge_delta_180_date =0,#180天后涨跌幅
+                    hightest_price_delta_180_date=0,#180天后最高涨跌幅
                 ).save()
                 
     #更新Sccrapy_D表中，发布日期、30天后、60天后、90天后、180天后为空的数据
@@ -158,28 +212,33 @@ def ArticleComputer_view(request):
     
 
     for i in Scrapy_D.objects.filter(price_publish_date = 0):
-        i.price_publish_date = comupter_delta(need_price_data,i.code,i.date,0)#更新30天后的价格
+        i.price_publish_date = comupter_delta(need_price_data,i.code,i.date,0)#更新发布时的价格
         i.save()
 
 
     for i in Scrapy_D.objects.filter(price_delta_30_date = 0):
         i.price_delta_30_date = comupter_delta(need_price_data,i.code,i.date,30)#更新30天后的价格
         i.charge_delta_30_date = duz(comupter_delta(need_price_data,i.code,i.date,30),i.price_publish_date)#更新30天后的涨跌幅
+        i.hightest_price_delta_30_date  = duz(max_price(need_price_data,i.code,i.date,30),i.price_publish_date)#更新30天后的最高涨幅
+        #i.hightest_price_delta_30_date  = max_price(need_price_data,i.code,i.date,30)#更新30天后的最高价格
         i.save()
 
     for i in Scrapy_D.objects.filter(price_delta_60_date = 0):
         i.price_delta_60_date = comupter_delta(need_price_data,i.code,i.date,60)#更新60天后的价格
         i.charge_delta_60_date = duz(comupter_delta(need_price_data,i.code,i.date,60),i.price_publish_date)#更新60天后的涨跌幅
+        i.hightest_price_delta_60_date  = duz(max_price(need_price_data,i.code,i.date,60),i.price_publish_date)#更新30天后的最高涨幅
         i.save()
     
     for i in Scrapy_D.objects.filter(price_delta_90_date = 0):
         i.price_delta_90_date = comupter_delta(need_price_data,i.code,i.date,90)#更新90天后的价格
         i.charge_delta_90_date = duz(comupter_delta(need_price_data,i.code,i.date,90),i.price_publish_date)#更新90天后的涨跌幅
+        i.hightest_price_delta_90_date  = duz(max_price(need_price_data,i.code,i.date,90),i.price_publish_date)#更新90天后的最高涨幅
         i.save()
         
     for i in Scrapy_D.objects.filter(price_delta_180_date = 0):
         i.price_delta_180_date = comupter_delta(need_price_data,i.code,i.date,180)#更新180天后的价格
         i.charge_delta_180_date = duz(comupter_delta(need_price_data,i.code,i.date,180),i.price_publish_date)#更新180天后的涨跌幅
+        i.hightest_price_delta_180_date  = duz(max_price(need_price_data,i.code,i.date,180),i.price_publish_date)#更新180天后的最高涨幅
         i.save()
     
     end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
@@ -190,7 +249,7 @@ def CSH_price_view(request):
     #http://localhost:8080/CSH_price
     #初始化所有股票的价格数据
     start_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-    engine = create_engine(r'sqlite:///E:\test\myweb\db\myweb.db')
+    engine = create_engine(db_path)
     #清空原有数据
     CSH_price.objects.all().delete()
     for i in Stock_base.objects.all():
@@ -204,7 +263,7 @@ def CSH_price_view(request):
     
 def stock_detail_today_view(request):
     start_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-    engine = create_engine(r'sqlite:///E:\test\myweb\db\myweb.db')
+    engine = create_engine(db_path)
     today_date = datetime.datetime.now()#今天日期
     today_date = datetime.datetime.now()-timedelta(days = 1)#今天日期，用户测试，往前推一天
     #try:
