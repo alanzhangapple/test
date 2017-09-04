@@ -39,6 +39,7 @@ def stock_base_view(request):
     #print Stock_base.objects.all().count()
     Stock_base.objects.all().delete()
     df.to_sql('myapp_stock_base',engine,if_exists='append')
+    #df.to_sql('myapp_stock_base_test',engine)
     result_message = "添加成功！"
     return HttpResponse(result_message)
     
