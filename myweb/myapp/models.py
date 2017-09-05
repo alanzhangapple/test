@@ -41,7 +41,7 @@ class Scrapy_D(models.Model):
     name = models.CharField(max_length=100,default = "ICG")
     content = models.TextField(blank=True, null=True,verbose_name = "ICG")#记录报告内容
     
-    boolean_str = models.IntegerField(default = 1)#标记股票是否参加计算，1表示参加，0表示不参加
+    boolean_str = models.IntegerField(default = 0)#标记股票是否参加计算，1表示参加，0表示不参加
     
     
     #记录价格信息，如果时间是周末，则记录上个周五的价格

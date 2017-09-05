@@ -10,7 +10,7 @@ import time
 from django.db.models import Avg
 # Create your views here.
 import os
-
+import xlwt
 import platform
 
 #判断操作系统
@@ -51,8 +51,8 @@ def Analyst_power_today_view(request):
     Analyst_power_today.objects.all().delete()#先删除掉所有记录
     #统计每个分析师在每个周期的平均涨跌幅，30天，60天，90天，180天
     for k in Analyst.objects.all():
-        t = Scrapy_D.objects.filter(name = k.name)
-
+        t = Scrapy_D.objects.filter(name = k.name,boolean_str=1)
+        print t
         if t:
             Analyst_power_today(
                                 name = t[0].name,
@@ -101,7 +101,16 @@ def duz(a,b):
     else:
         return a/b-1
 
-        
+def if_hot(need_price_data,code):
+    #判断是否为一字板涨停股票
+    #一字板的表准是：open=close=high=low
+
+    for i in need_price_data:
+        if i["code"]== code and i["open"]==i["high"] and i["close"]==i["open"] and i["open"]==i["low"]:
+            return 0
+        else:
+            return 1
+
         
 def max_price(need_price_data,code,publish_date,delta):
     #计算时间间隔内股票的最高价格，如30天以内，最高的价格
@@ -165,17 +174,27 @@ def ArticleComputer_view(request):
     t = Scrapy_D.objects.filter(title__in = Scrapy_B_title_list)
 
     t.delete()
-
+    print "strat"
     for k in Scrapy_B.objects.all():
         #print k.code,k.name
 
         #price_publish = comupter_delta(k.code,k.date,0)#发布日期价格
+        
+        #如果有【买入】和【增持】则参与计算，否则不参与
+        if u"买入" in k.content or u"增持" in k.content:
+            if_computer = 1
+        else:
+            if_computer = 0
+        
+        
         Scrapy_D(
                     code = k.code,
                     date = k.date,
                     title = k.title,
                     company = k.company,
                     name = k.name,
+                    content = k.content,
+                    boolean_str = if_computer,
                     
                     price_publish_date = 0,#从发布日期往后推0天的价格
                     
@@ -211,7 +230,7 @@ def ArticleComputer_view(request):
     need_price_data  = CSH_price.objects.filter(code__in = Scrapy_B_code_list).values("code","date","close")
 
     
-
+    print "A"
     for i in Scrapy_D.objects.filter(price_publish_date = 0):
         i.price_publish_date = comupter_delta(need_price_data,i.code,i.date,0)#更新发布时的价格
         i.save()
@@ -223,24 +242,35 @@ def ArticleComputer_view(request):
         i.hightest_price_delta_30_date  = duz(max_price(need_price_data,i.code,i.date,30),i.price_publish_date)#更新30天后的最高涨幅
         #i.hightest_price_delta_30_date  = max_price(need_price_data,i.code,i.date,30)#更新30天后的最高价格
         i.save()
-
+    print "B"
     for i in Scrapy_D.objects.filter(price_delta_60_date = 0):
         i.price_delta_60_date = comupter_delta(need_price_data,i.code,i.date,60)#更新60天后的价格
         i.charge_delta_60_date = duz(comupter_delta(need_price_data,i.code,i.date,60),i.price_publish_date)#更新60天后的涨跌幅
         i.hightest_price_delta_60_date  = duz(max_price(need_price_data,i.code,i.date,60),i.price_publish_date)#更新30天后的最高涨幅
         i.save()
-    
+    print "C"
     for i in Scrapy_D.objects.filter(price_delta_90_date = 0):
         i.price_delta_90_date = comupter_delta(need_price_data,i.code,i.date,90)#更新90天后的价格
         i.charge_delta_90_date = duz(comupter_delta(need_price_data,i.code,i.date,90),i.price_publish_date)#更新90天后的涨跌幅
         i.hightest_price_delta_90_date  = duz(max_price(need_price_data,i.code,i.date,90),i.price_publish_date)#更新90天后的最高涨幅
         i.save()
-        
+    print "D"
     for i in Scrapy_D.objects.filter(price_delta_180_date = 0):
         i.price_delta_180_date = comupter_delta(need_price_data,i.code,i.date,180)#更新180天后的价格
         i.charge_delta_180_date = duz(comupter_delta(need_price_data,i.code,i.date,180),i.price_publish_date)#更新180天后的涨跌幅
         i.hightest_price_delta_180_date  = duz(max_price(need_price_data,i.code,i.date,180),i.price_publish_date)#更新180天后的最高涨幅
         i.save()
+    print "E"
+    #遍历Scrapy_D,如果是一字板的话，就不参与计算
+    #一字板的表准是：open=close=high=low
+    for i in Scrapy_D.objects.filter(boolean_str = 1):
+        #判断是否为一字板涨停股票，是的话，不参与计算
+        t =if_hot(need_price_data,k.code)
+        if not t:
+            i.boolean_str = t
+            i.save()
+    
+    
     
     end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     result_message = "添加成功！开始时间："+start_time+"结束时间："+end_time
@@ -331,7 +361,56 @@ def stock_detail_today_view(request):
 
     
     
+def out_put_bill_view(request):
+    '''导出所有分析师的能力清单'''
+    all_bill = Analyst_power_today.objects.all()
+
+    response = HttpResponse(content_type='application/vnd.ms-excel')
     
+    filename = u"Analyst_power-"+time.strftime('%Y-%m-%d-%H-%M-%S')+".xls"
+    temp_str = 'attachment; filename='+filename
+    response['Content-Disposition'] = temp_str
+    workbook = xlwt.Workbook(encoding='utf-8') #创建工作簿
+    sheet = workbook.add_sheet("Analyst_power") #创建工作页
+    
+
+    row = 1  #行号
+    col = 0  #列号
+    #表头
+    row0 = [
+        u'id',
+        u'姓名',
+        u'公司',
+        u'30天涨跌',
+        u'30天最高涨跌',
+        u'60天涨跌',
+        u'60天最高涨跌',
+        u'90天涨跌',
+        u'90天最高涨跌',
+        u'180天涨跌',
+        u'180天最高涨跌',
+        ]
+    for i in range(0,len(row0)):
+        sheet.write(0,i,row0[i])
+
+    
+    for i in all_bill:
+        sheet.write(row,col,i.id)
+        sheet.write(row,col+1,i.name)
+        sheet.write(row,col+2,i.company)
+        sheet.write(row,col+3,i.power_30)
+        sheet.write(row,col+4,i.power_30_high)
+        sheet.write(row,col+5,i.power_60)
+        sheet.write(row,col+6,i.power_60_high)
+        sheet.write(row,col+7,i.power_90)
+        sheet.write(row,col+8,i.power_90_high)
+        sheet.write(row,col+9,i.power_180)
+        sheet.write(row,col+10,i.power_180_high)
+        row = row+1
+    workbook.save(response) 
+    
+    return response
+
     
     
     

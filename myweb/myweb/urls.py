@@ -32,4 +32,5 @@ urlpatterns = [
     url(r'^Analyst_power_history$', 'myapp.views.Analyst_power_history_view', name='Analyst_power_history_view'),
     
     url(r'^CSH_price$', 'myapp.views.CSH_price_view', name='CSH_price_view'),#第一次初始化所有的股票数据
+    url(r'^out_put_bill$', 'myapp.views.out_put_bill_view', name='out_put_bill_view'),#导出股票分析师的能力结果数据
 ]
