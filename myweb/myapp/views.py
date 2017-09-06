@@ -129,9 +129,8 @@ def max_price(need_price_data,code,publish_date,delta):
     for i in need_price_data:
         if i["code"]== code and i["date"] >= publish_date.strftime("%Y-%m-%d")  and i["date"] <= last_date.strftime("%Y-%m-%d"):
             price_data.append(i["close"])
-        else:
-            #如果查不到股票价格，价格就是0
-            pass
+        if len(price_data)==delta:
+            return max(price_data)
             
     return max(price_data)
 def comupter_delta(need_price_data,code,publish_date,delta):
@@ -154,6 +153,7 @@ def comupter_delta(need_price_data,code,publish_date,delta):
     for i in need_price_data:
         if i["code"]== code and i["date"]==last_date.strftime("%Y-%m-%d"):
             price_data = i["close"]
+            return price_data
 
     return price_data
     
