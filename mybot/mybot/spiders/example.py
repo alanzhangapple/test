@@ -15,7 +15,7 @@ sys.setdefaultencoding('utf8')
 #生成6000个页面
 start_url = ['http://vip.stock.finance.sina.com.cn/q/go.php/vReport_List/kind/company/index.phtml']
 first_url = 'http://vip.stock.finance.sina.com.cn/q/go.php/vReport_List/kind/company/index.phtml?p='
-for i in range(1500,1503):
+for i in range(1500,1550):
     start_url.append(first_url+str(i))
 
 class ExampleSpider(BaseSpider):

@@ -125,14 +125,17 @@ def max_price(need_price_data,code,publish_date,delta):
     if date_publish_weekday == 5:
         last_date = last_date-datetime.timedelta(days = 1 )
     
-
+    #这里遍历时间太久了，不能完全遍历，此处需要增加一个开关，如果增加了足够的数据，就跳出循环
+    #delta表示需要增加的数据数量
+    
     for i in need_price_data:
         if i["code"]== code and i["date"] >= publish_date.strftime("%Y-%m-%d")  and i["date"] <= last_date.strftime("%Y-%m-%d"):
             price_data.append(i["close"])
-        else:
-            #如果查不到股票价格，价格就是0
-            pass
             
+            if len(price_data) == delta:
+                return max(price_data)
+                
+
     return max(price_data)
 def comupter_delta(need_price_data,code,publish_date,delta):
     #计算间隔时间的股票价格，如30天之后的价格
@@ -154,6 +157,7 @@ def comupter_delta(need_price_data,code,publish_date,delta):
     for i in need_price_data:
         if i["code"]== code and i["date"]==last_date.strftime("%Y-%m-%d"):
             price_data = i["close"]
+            return price_data
 
     return price_data
     
@@ -174,7 +178,7 @@ def ArticleComputer_view(request):
     t = Scrapy_D.objects.filter(title__in = Scrapy_B_title_list)
 
     t.delete()
-    print "strat"
+    print "strat",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     for k in Scrapy_B.objects.all():
         #print k.code,k.name
 
@@ -230,37 +234,37 @@ def ArticleComputer_view(request):
     need_price_data  = CSH_price.objects.filter(code__in = Scrapy_B_code_list).values("code","date","close")
 
     
-    print "A"
+    print "A",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     for i in Scrapy_D.objects.filter(price_publish_date = 0):
         i.price_publish_date = comupter_delta(need_price_data,i.code,i.date,0)#更新发布时的价格
         i.save()
 
-
+    print "B",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     for i in Scrapy_D.objects.filter(price_delta_30_date = 0):
         i.price_delta_30_date = comupter_delta(need_price_data,i.code,i.date,30)#更新30天后的价格
         i.charge_delta_30_date = duz(comupter_delta(need_price_data,i.code,i.date,30),i.price_publish_date)#更新30天后的涨跌幅
         i.hightest_price_delta_30_date  = duz(max_price(need_price_data,i.code,i.date,30),i.price_publish_date)#更新30天后的最高涨幅
         #i.hightest_price_delta_30_date  = max_price(need_price_data,i.code,i.date,30)#更新30天后的最高价格
         i.save()
-    print "B"
+    print "C",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     for i in Scrapy_D.objects.filter(price_delta_60_date = 0):
         i.price_delta_60_date = comupter_delta(need_price_data,i.code,i.date,60)#更新60天后的价格
         i.charge_delta_60_date = duz(comupter_delta(need_price_data,i.code,i.date,60),i.price_publish_date)#更新60天后的涨跌幅
         i.hightest_price_delta_60_date  = duz(max_price(need_price_data,i.code,i.date,60),i.price_publish_date)#更新30天后的最高涨幅
         i.save()
-    print "C"
+    print "D",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     for i in Scrapy_D.objects.filter(price_delta_90_date = 0):
         i.price_delta_90_date = comupter_delta(need_price_data,i.code,i.date,90)#更新90天后的价格
         i.charge_delta_90_date = duz(comupter_delta(need_price_data,i.code,i.date,90),i.price_publish_date)#更新90天后的涨跌幅
         i.hightest_price_delta_90_date  = duz(max_price(need_price_data,i.code,i.date,90),i.price_publish_date)#更新90天后的最高涨幅
         i.save()
-    print "D"
+    print "E",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     for i in Scrapy_D.objects.filter(price_delta_180_date = 0):
         i.price_delta_180_date = comupter_delta(need_price_data,i.code,i.date,180)#更新180天后的价格
         i.charge_delta_180_date = duz(comupter_delta(need_price_data,i.code,i.date,180),i.price_publish_date)#更新180天后的涨跌幅
         i.hightest_price_delta_180_date  = duz(max_price(need_price_data,i.code,i.date,180),i.price_publish_date)#更新180天后的最高涨幅
         i.save()
-    print "E"
+    print "F",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     #遍历Scrapy_D,如果是一字板的话，就不参与计算
     #一字板的表准是：open=close=high=low
     for i in Scrapy_D.objects.filter(boolean_str = 1):
@@ -280,11 +284,13 @@ def CSH_price_view(request):
     #http://localhost:8080/CSH_price
     #初始化所有股票的价格数据
     start_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    print "strat!",start_time
     engine = create_engine(db_path)
     #清空原有数据
     CSH_price.objects.all().delete()
     for i in Stock_base.objects.all():
     #    df = ts.get_hist_data(i.code)
+        #print i.code
         df = ts.get_k_data(code=i.code)
         df.to_sql('myapp_csh_price',engine,if_exists='append')
     result_message = "添加成功！"
