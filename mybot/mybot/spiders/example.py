@@ -15,7 +15,7 @@ sys.setdefaultencoding('utf8')
 #生成6000个页面
 start_url = ['http://vip.stock.finance.sina.com.cn/q/go.php/vReport_List/kind/company/index.phtml']
 first_url = 'http://vip.stock.finance.sina.com.cn/q/go.php/vReport_List/kind/company/index.phtml?p='
-for i in range(1500,1550):
+for i in range(1000,1010):
     start_url.append(first_url+str(i))
 
 class ExampleSpider(BaseSpider):
@@ -58,7 +58,7 @@ class ExampleSpider(BaseSpider):
                     
                 #录入研究报告的内容
                 if tree.xpath('//div[@class="blk_container"]/p/text()')!=[]:
-                    print tree.xpath('//div[@class="blk_container"]')
+                    #print tree.xpath('//div[@class="blk_container"]')
                     #item["content"] = tree.xpath('//div[@class="blk_container"]').xpath("string(.)").exttract()[0]
                     item["content"] = tree.xpath('//div[@class="blk_container"]')[0].xpath('string(.)').strip()
                  

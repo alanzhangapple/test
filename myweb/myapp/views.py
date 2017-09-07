@@ -52,7 +52,7 @@ def Analyst_power_today_view(request):
     #统计每个分析师在每个周期的平均涨跌幅，30天，60天，90天，180天
     for k in Analyst.objects.all():
         t = Scrapy_D.objects.filter(name = k.name,boolean_str=1)
-        print t
+        #print t
         if t:
             Analyst_power_today(
                                 name = t[0].name,
@@ -290,8 +290,10 @@ def CSH_price_view(request):
     CSH_price.objects.all().delete()
     for i in Stock_base.objects.all():
     #    df = ts.get_hist_data(i.code)
+
         #print i.code
-        df = ts.get_k_data(code=i.code)
+        df = ts.get_k_data(code=i.code)#获取前复权数据
+
         df.to_sql('myapp_csh_price',engine,if_exists='append')
     result_message = "添加成功！"
     end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
