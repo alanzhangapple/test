@@ -131,7 +131,6 @@ def max_price(need_price_data,code,publish_date,delta):
     for i in need_price_data:
         if i["code"]== code and i["date"] >= publish_date.strftime("%Y-%m-%d")  and i["date"] <= last_date.strftime("%Y-%m-%d"):
             price_data.append(i["close"])
-            
             if len(price_data) == delta:
                 return max(price_data)
                 
