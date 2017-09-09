@@ -1,4 +1,7 @@
 
 myweb/db/myweb.db
+<<<<<<< HEAD
+=======
 myweb/myapp/migrations/0001_initial.py
 myweb/myapp/migrations/0001_initial.pyc
+>>>>>>> 56e3c7b2ad09ddedd1691cf938169b516ed2fbb0
