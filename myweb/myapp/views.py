@@ -276,6 +276,38 @@ def ArticleComputer_view(request):
     result_message = "添加成功！开始时间："+start_time+"结束时间："+end_time
     return HttpResponse(result_message)
 
+#从CHS_price中查询一次所有的数据
+#date_now = datetime.datetime.now()-timedelta(days = 365)#往前推1年
+str = '2016-1-1'
+date_time = datetime.datetime.strptime(str,'%Y-%m-%d')
+Scrapy_B_code_list = Scrapy_B.objects.filter(date__gt = date_time).values_list("code",flat=True)
+#print "time 1:",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))查询2016年的股票
+need_price_data  = CSH_price.objects.filter(code__in = Scrapy_B_code_list).values("code","date","close")
+
+def  computer_30(i):
+    i.price_delta_30_date = comupter_delta(need_price_data,i.code,i.date,30)#更新30天后的价格
+    i.charge_delta_30_date = duz(comupter_delta(need_price_data,i.code,i.date,30),i.price_publish_date)#更新30天后的涨跌幅
+    i.hightest_price_delta_30_date  = duz(max_price(need_price_data,i.code,i.date,30),i.price_publish_date)#更新30天后的最高涨幅
+    i.save()
+    
+    
+def ArticleComputer_view_2(request):
+    start_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    print "start"
+    #查询ScrapyD表中数据30天为0的数据,先计算2016年至今的数据
+    k = Scrapy_D.objects.filter(price_delta_30_date = 0,date__gt = date_time):
+    map(computer_30,k)
+    end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    result_message = "添加成功！开始时间："+start_time+"结束时间："+end_time
+    return HttpResponse(result_message)
+    
+    
+    
+    
+    
+    
+    
+    
 def CSH_price_view(request):
     #http://localhost:8080/CSH_price
     #初始化所有股票的价格数据
