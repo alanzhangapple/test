@@ -561,7 +561,89 @@ def out_put_bill_view(request):
     return response
 
     
+def out_put_bill_2_view(request):
+    '''导出所有分析师的能力清单'''
     
+    all_bill = Scrapy_D.objects.filter(date__gt = date_time)
+
+    response = HttpResponse(content_type='application/vnd.ms-excel')
+    
+    filename = u"Analyst_power-"+time.strftime('%Y-%m-%d-%H-%M-%S')+".xlsx"
+    temp_str = 'attachment; filename='+filename
+    response['Content-Disposition'] = temp_str
+    workbook = xlwt.Workbook(encoding='utf-8') #创建工作簿
+    sheet = workbook.add_sheet("Analyst_power") #创建工作页
+    
+
+    row = 1  #行号
+    col = 0  #列号
+    #表头
+    row0 = [
+        u'id',
+        u'股票代码',
+        u'发布日期',
+        u'标题',
+        u'公司',
+        u'分析师姓名',
+        u'内容',
+        u'是否参与计算',
+        u'发布时价格',
+        
+        u'30天后日期',
+        u'30天后价格',
+        u'30天后涨幅',
+        u'30天后最大涨幅',
+        
+        u'60天后日期',
+        u'60天后价格',
+        u'60天后涨幅',
+        u'60天后最大涨幅',
+        
+        u'90天后日期',
+        u'90天后价格',
+        u'90天后涨幅',
+        u'90天后最大涨幅',
+        
+        u'180天后日期',
+        u'180天后价格',
+        u'180天后涨幅',
+        u'180天后最大涨幅',
+        
+        ]
+    for i in range(0,len(row0)):
+        sheet.write(0,i,row0[i])
+
+    
+    for i in all_bill:
+        sheet.write(row,col,i.id)
+        sheet.write(row,col+1,i.code)
+        sheet.write(row,col+2,i.date)
+        sheet.write(row,col+3,i.title)
+        sheet.write(row,col+4,i.company)
+        sheet.write(row,col+5,i.name)
+        sheet.write(row,col+6,i.content)
+        sheet.write(row,col+7,i.boolean_str)
+        sheet.write(row,col+8,i.price_publish_date)
+        sheet.write(row,col+9,i.delta_30_date)
+        sheet.write(row,col+10,i.price_delta_30_date)
+        sheet.write(row,col+11,i.charge_delta_30_date)
+        sheet.write(row,col+12,i.hightest_price_delta_30_date)
+        sheet.write(row,col+13,i.delta_60_date)
+        sheet.write(row,col+14,i.price_delta_60_date)
+        sheet.write(row,col+15,i.charge_delta_60_date)
+        sheet.write(row,col+16,i.hightest_price_delta_60_date)
+        sheet.write(row,col+17,i.delta_90_date)
+        sheet.write(row,col+18,i.price_delta_90_date)
+        sheet.write(row,col+19,i.charge_delta_90_date)
+        sheet.write(row,col+20,i.hightest_price_delta_90_date)
+        sheet.write(row,col+21,i.delta_180_date)
+        sheet.write(row,col+22,i.price_delta_180_date)
+        sheet.write(row,col+23,i.charge_delta_180_date)
+        sheet.write(row,col+24,i.hightest_price_delta_180_date)
+        row = row+1
+    workbook.save(response) 
+    
+    return response
     
     
     
