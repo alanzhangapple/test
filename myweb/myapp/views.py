@@ -12,7 +12,7 @@ from django.db.models import Avg
 import os
 import xlwt
 import platform
-
+import traceback
 #判断操作系统
 #如果是windows系统，就用'r'sqlite:///E:\test\myweb\db\myweb.db''
 #如果是ubuntu，就用"r'sqlite:////test/myweb/db/myweb.db"
@@ -99,7 +99,7 @@ def duz(a,b):
     if a==0 or b==0:
         return 0
     else:
-        return a/b-1
+        return float(a/b-1)
 
 def if_hot(need_price_data,code):
     #判断是否为一字板涨停股票
@@ -129,19 +129,31 @@ def max_price(need_price_data,code,publish_date,delta):
     #delta表示需要增加的数据数量
     
     for i in need_price_data:
-        if i["code"]== code and i["date"] >= publish_date.strftime("%Y-%m-%d")  and i["date"] <= last_date.strftime("%Y-%m-%d"):
+        #if i["code"]== code and i["date"] >= publish_date.strftime("%Y-%m-%d")  and i["date"] <= last_date.strftime("%Y-%m-%d"):
+        if i["code"]== code and i["date"] >= publish_date.strftime("%Y-%m-%d"):#
             price_data.append(i["close"])
             if len(price_data) == delta:
                 return max(price_data)
                 
 
     return max(price_data)
+    
+def get_price(i,code,last_date):
+    #print "in",code,last_date
+    price_data = 0
+    #os.system("pause")
+    if i["code"]== code and i["date"]==last_date.strftime("%Y-%m-%d"):
+        price_data = i["close"]
+        #print "in in"
+        return price_data
+    return price_data
+    
 def comupter_delta(need_price_data,code,publish_date,delta):
     #计算间隔时间的股票价格，如30天之后的价格
     #input：股票编码合并数据，股票编码，发布时间，延迟时间
     #output:价格，此处价格为收盘价
 
-    
+    price_data = 0
     last_date = publish_date + timedelta(days = delta)
     date_publish_weekday = last_date.weekday()
     #如果遇到周六周日，统一记作周五
@@ -151,15 +163,54 @@ def comupter_delta(need_price_data,code,publish_date,delta):
     if date_publish_weekday == 5:
         last_date = last_date-datetime.timedelta(days = 1 )
     #如果查不到股票价格，价格就是0
-    price_data = 0
+
 
     for i in need_price_data:
         if i["code"]== code and i["date"]==last_date.strftime("%Y-%m-%d"):
             price_data = i["close"]
             return price_data
-
     return price_data
+
     
+def write_content(k):
+    if u"买入" in k.content or u"增持" in k.content:
+        if_computer = 1
+    else:
+        if_computer = 0
+    
+    
+    Scrapy_D(
+                code = k.code,
+                date = k.date,
+                title = k.title,
+                company = k.company,
+                name = k.name,
+                content = k.content,
+                boolean_str = if_computer,
+                
+                price_publish_date = 0,#从发布日期往后推0天的价格
+                
+                delta_30_date = k.date + timedelta(days = 30),
+                price_delta_30_date = 0,#从发布日期往后推30天
+                charge_delta_30_date = 0, #30天后涨跌幅
+                hightest_price_delta_30_date=0,#30天后最高涨跌幅
+                
+                delta_60_date = k.date + timedelta(days = 60),
+                price_delta_60_date = 0,#从发布日期往后推60天
+                charge_delta_60_date = 0,#60天后涨跌幅
+                hightest_price_delta_60_date=0,#60天后最高涨跌幅
+                
+                delta_90_date = k.date + timedelta(days = 90),
+                price_delta_90_date = 0,#从发布日期往后推90天
+                charge_delta_90_date = 0,#90天后涨跌幅
+                hightest_price_delta_90_date=0,#90天后最高涨跌幅
+                
+                
+                delta_180_date = k.date + timedelta(days = 180),
+                price_delta_180_date = 0,#从发布日期往后推180天
+                charge_delta_180_date =0,#180天后涨跌幅
+                hightest_price_delta_180_date=0,#180天后最高涨跌幅
+            ).save()
 def ArticleComputer_view(request):
     #localhost:8080/ArticleComputer
     #获取研报中每条数据的价格，发布价格、30天后价格、60天后价格、90天后价格
@@ -178,66 +229,19 @@ def ArticleComputer_view(request):
 
     t.delete()
     print "strat",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-    for k in Scrapy_B.objects.all():
-        #print k.code,k.name
+    map(write_content,Scrapy_B.objects.all())
 
-        #price_publish = comupter_delta(k.code,k.date,0)#发布日期价格
-        
-        #如果有【买入】和【增持】则参与计算，否则不参与
-        if u"买入" in k.content or u"增持" in k.content:
-            if_computer = 1
-        else:
-            if_computer = 0
-        
-        
-        Scrapy_D(
-                    code = k.code,
-                    date = k.date,
-                    title = k.title,
-                    company = k.company,
-                    name = k.name,
-                    content = k.content,
-                    boolean_str = if_computer,
-                    
-                    price_publish_date = 0,#从发布日期往后推0天的价格
-                    
-                    delta_30_date = k.date + timedelta(days = 30),
-                    price_delta_30_date = 0,#从发布日期往后推30天
-                    charge_delta_30_date = 0, #30天后涨跌幅
-                    hightest_price_delta_30_date=0,#30天后最高涨跌幅
-                    
-                    delta_60_date = k.date + timedelta(days = 60),
-                    price_delta_60_date = 0,#从发布日期往后推60天
-                    charge_delta_60_date = 0,#60天后涨跌幅
-                    hightest_price_delta_60_date=0,#60天后最高涨跌幅
-                    
-                    delta_90_date = k.date + timedelta(days = 90),
-                    price_delta_90_date = 0,#从发布日期往后推90天
-                    charge_delta_90_date = 0,#90天后涨跌幅
-                    hightest_price_delta_90_date=0,#90天后最高涨跌幅
-                    
-                    
-                    delta_180_date = k.date + timedelta(days = 180),
-                    price_delta_180_date = 0,#从发布日期往后推180天
-                    charge_delta_180_date =0,#180天后涨跌幅
-                    hightest_price_delta_180_date=0,#180天后最高涨跌幅
-                ).save()
-                
     #更新Sccrapy_D表中，发布日期、30天后、60天后、90天后、180天后为空的数据
     
     #从CHS_price中查询一次所有的数据
-    
+    #print "A",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    '''
     Scrapy_B_code_list = Scrapy_B.objects.all().values_list("code",flat=True)
     #print "time 1:",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-
     need_price_data  = CSH_price.objects.filter(code__in = Scrapy_B_code_list).values("code","date","close")
-
-    
-    print "A",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     for i in Scrapy_D.objects.filter(price_publish_date = 0):
         i.price_publish_date = comupter_delta(need_price_data,i.code,i.date,0)#更新发布时的价格
         i.save()
-
     print "B",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     for i in Scrapy_D.objects.filter(price_delta_30_date = 0):
         i.price_delta_30_date = comupter_delta(need_price_data,i.code,i.date,30)#更新30天后的价格
@@ -272,9 +276,7 @@ def ArticleComputer_view(request):
         if not t:
             i.boolean_str = t
             i.save()
-    
-    
-    
+    '''
     end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     result_message = "添加成功！开始时间："+start_time+"结束时间："+end_time
     return HttpResponse(result_message)
@@ -288,24 +290,132 @@ Scrapy_B_code_list = Scrapy_B.objects.filter(date__gt = date_time).values_list("
 need_price_data  = CSH_price.objects.filter(code__in = Scrapy_B_code_list).values("code","date","close")
 
 def  computer_30(i):
+    #print "i am here"
     i.price_delta_30_date = comupter_delta(need_price_data,i.code,i.date,30)#更新30天后的价格
     i.charge_delta_30_date = duz(comupter_delta(need_price_data,i.code,i.date,30),i.price_publish_date)#更新30天后的涨跌幅
     i.hightest_price_delta_30_date  = duz(max_price(need_price_data,i.code,i.date,30),i.price_publish_date)#更新30天后的最高涨幅
-    i.save()
+    try:
+        i.save()
+    except Exception as e:
+        print "yichang!!!"
+        record_except()
+        record_log(i.code)
+        record_log(i.date)
+
+
     
     
-def ArticleComputer_view_2(request):
+def ArticleComputer_2_view(request):
     start_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-    print "start"
+    print "start",start_time
     #查询ScrapyD表中数据30天为0的数据,先计算2016年至今的数据
-    k = Scrapy_D.objects.filter(price_delta_30_date = 0,date__gt = date_time):
+    k = Scrapy_D.objects.filter(price_delta_30_date = 0,date__gt = date_time)
     map(computer_30,k)
+    end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    result_message = "添加成功！开始时间："+start_time+"结束时间："+end_time
+    return HttpResponse(result_message)
+
+    
+    
+def  computer_60(i):
+    #print "i am here"
+    i.price_delta_60_date = comupter_delta(need_price_data,i.code,i.date,60)#更新60天后的价格
+    i.charge_delta_60_date = duz(comupter_delta(need_price_data,i.code,i.date,60),i.price_publish_date)#更新60天后的涨跌幅
+    i.hightest_price_delta_60_date  = duz(max_price(need_price_data,i.code,i.date,60),i.price_publish_date)#更新60天后的最高涨幅
+    try:
+        i.save()
+    except Exception as e:
+        print "yichang!!!"
+        record_except()
+        record_log(i.code)
+        record_log(i.date)
+
+
+    
+    
+def ArticleComputer_3_view(request):
+    start_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    print "start",start_time
+    #查询ScrapyD表中数据60天为0的数据,先计算2016年至今的数据
+    k = Scrapy_D.objects.filter(price_delta_60_date = 0,date__gt = date_time)
+    map(computer_60,k)
+    end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    result_message = "添加成功！开始时间："+start_time+"结束时间："+end_time
+    return HttpResponse(result_message)
+    
+def  computer_90(i):
+    #print "i am here"
+    i.price_delta_90_date = comupter_delta(need_price_data,i.code,i.date,90)#更新90天后的价格
+    i.charge_delta_90_date = duz(comupter_delta(need_price_data,i.code,i.date,90),i.price_publish_date)#更新90天后的涨跌幅
+    i.hightest_price_delta_90_date  = duz(max_price(need_price_data,i.code,i.date,90),i.price_publish_date)#更新90天后的最高涨幅
+    try:
+        i.save()
+    except Exception as e:
+        print "yichang!!!"
+        record_except()
+        record_log(i.code)
+        record_log(i.date)
+
+
+    
+def ArticleComputer_4_view(request):
+    start_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    print "start",start_time
+    #查询ScrapyD表中数据60天为0的数据,先计算2016年至今的数据
+    k = Scrapy_D.objects.filter(price_delta_90_date = 0,date__gt = date_time)
+    map(computer_90,k)
     end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
     result_message = "添加成功！开始时间："+start_time+"结束时间："+end_time
     return HttpResponse(result_message)
     
     
     
+def  computer_180(i):
+    #print "i am here"
+    i.price_delta_180_date = comupter_delta(need_price_data,i.code,i.date,180)#更新180天后的价格
+    i.charge_delta_180_date = duz(comupter_delta(need_price_data,i.code,i.date,180),i.price_publish_date)#更新180天后的涨跌幅
+    i.hightest_price_delta_180_date  = duz(max_price(need_price_data,i.code,i.date,180),i.price_publish_date)#更新180天后的最高涨幅
+    try:
+        i.save()
+    except Exception as e:
+        print "yichang!!!"
+        record_except()
+        record_log(i.code)
+        record_log(i.date)
+
+
+    
+def ArticleComputer_5_view(request):
+    start_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    print "start",start_time
+    #查询ScrapyD表中数据60天为0的数据,先计算2016年至今的数据
+    k = Scrapy_D.objects.filter(price_delta_180_date = 0,date__gt = date_time)
+    map(computer_180,k)
+    end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    result_message = "添加成功！开始时间："+start_time+"结束时间："+end_time
+    return HttpResponse(result_message)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+def computer_publish_price(i):
+    i.price_publish_date = comupter_delta(need_price_data,i.code,i.date,0)#更新发布时的价格
+    i.save()
+def ArticleComputer_1_view(request):
+    start_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    print "start",start_time
+
+    map(computer_publish_price,Scrapy_D.objects.filter(price_publish_date = 0,date__gt = date_time))
+
+    end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    result_message = "添加成功！开始时间："+start_time+"结束时间："+end_time
+    return HttpResponse(result_message)
     
     
     
@@ -455,5 +565,16 @@ def out_put_bill_view(request):
     
     
     
-    
+def record_except():
+    #记录异常内容
+    f=open("e:/test/myweb/log_yichang","a+")
+    traceback.print_exc(file=f)   
+    f.flush()   
+    f.close()
+def record_log(t):
+    '''记录哪个股票出现了异常'''
+    log_f = file("e:/test/myweb/log_content","a+") #日志文件
+    log_f.write(t+"\n")
+    log_f.close()
+
     
