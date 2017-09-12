@@ -13,6 +13,7 @@ import os
 import xlwt
 import platform
 import traceback
+import csv
 #判断操作系统
 #如果是windows系统，就用'r'sqlite:///E:\test\myweb\db\myweb.db''
 #如果是ubuntu，就用"r'sqlite:////test/myweb/db/myweb.db"
@@ -283,12 +284,12 @@ def ArticleComputer_view(request):
 
 #从CHS_price中查询一次所有的数据
 #date_now = datetime.datetime.now()-timedelta(days = 365)#往前推1年
-str = '2016-1-1'
-date_time = datetime.datetime.strptime(str,'%Y-%m-%d')
+strt = '2016-1-1'
+date_time = datetime.datetime.strptime(strt,'%Y-%m-%d')
 Scrapy_B_code_list = Scrapy_B.objects.filter(date__gt = date_time).values_list("code",flat=True)
 #print "time 1:",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))查询2016年的股票
 need_price_data  = CSH_price.objects.filter(code__in = Scrapy_B_code_list).values("code","date","close")
-
+stock_base_data = Stock_base.objects.filter(code__in = Scrapy_B_code_list).values("code","timeToMarket")
 def  computer_30(i):
     #print "i am here"
     i.price_delta_30_date = comupter_delta(need_price_data,i.code,i.date,30)#更新30天后的价格
@@ -565,6 +566,7 @@ def out_put_bill_2_view(request):
     '''导出所有分析师的能力清单'''
     
     all_bill = Scrapy_D.objects.filter(date__gt = date_time)
+    #all_bill = Scrapy_D.objects.all()
 
     response = HttpResponse(content_type='application/vnd.ms-excel')
     
@@ -645,7 +647,88 @@ def out_put_bill_2_view(request):
     
     return response
     
+def out_put_bill_3_view(request):
+    '''导出所有分析师的能力清单'''
+    #csv格式，suoyouScrapy_D的数据，10W多条
     
+    #all_bill = Scrapy_D.objects.filter(date__gt = date_time)
+    all_bill = Scrapy_D.objects.all()
+
+    response = HttpResponse(content_type='text/csv')
+    
+    filename = u"Analyst_power-"+time.strftime('%Y-%m-%d-%H-%M-%S')+".csv"
+    temp_str = 'attachment; filename='+filename
+    response['Content-Disposition'] = temp_str
+
+    writer = csv.writer(response)
+    
+
+    #表头
+    row0 = [
+        u'id',
+        u'股票代码',
+        u'发布日期',
+        u'标题',
+        u'公司',
+        u'分析师姓名',
+        u'内容',
+        u'是否参与计算',
+        u'发布时价格',
+        
+        u'30天后日期',
+        u'30天后价格',
+        u'30天后涨幅',
+        u'30天后最大涨幅',
+        
+        u'60天后日期',
+        u'60天后价格',
+        u'60天后涨幅',
+        u'60天后最大涨幅',
+        
+        u'90天后日期',
+        u'90天后价格',
+        u'90天后涨幅',
+        u'90天后最大涨幅',
+        
+        u'180天后日期',
+        u'180天后价格',
+        u'180天后涨幅',
+        u'180天后最大涨幅',
+        
+        ]
+    writer.writerow(row0)
+
+    for i in all_bill:
+        t=[]
+        t.append(i.id)
+        t.append(i.id)
+        t.append(i.code)
+        t.append(i.date)
+        t.append(i.title)
+        t.append(i.company)
+        t.append(i.name)
+        t.append(i.content)
+        t.append(i.boolean_str)
+        t.append(i.price_publish_date)
+        t.append(i.delta_30_date)
+        t.append(i.price_delta_30_date)
+        t.append(i.charge_delta_30_date)
+        t.append(i.hightest_price_delta_30_date)
+        t.append(i.delta_60_date)
+        t.append(i.price_delta_60_date)
+        t.append(i.charge_delta_60_date)
+        t.append(i.hightest_price_delta_60_date)
+        t.append(i.delta_90_date)
+        t.append(i.price_delta_90_date)
+        t.append(i.charge_delta_90_date)
+        t.append(i.hightest_price_delta_90_date)
+        t.append(i.delta_180_date)
+        t.append(i.price_delta_180_date)
+        t.append(i.charge_delta_180_date)
+        t.append(i.hightest_price_delta_180_date)
+        writer.writerow(row0)
+
+    return response
     
 def record_except():
     #记录异常内容
@@ -659,4 +742,36 @@ def record_log(t):
     log_f.write(t+"\n")
     log_f.close()
 
+date_now = datetime.datetime.now()
+def  except_new(i):
+    #如果发布研报时间比上市时间晚60天以上，则参与计算
+    for m in stock_base_data:
+        if m["code"] == i.code :
+            i.boolean_str=0
+            try:
+                date_time_gap = date_now-datetime.datetime.strptime(str(m["timeToMarket"]),'%Y%m%d')
+                if date_time_gap.days>60:
+                    i.boolean_str=1
+            except:
+                i.boolean_str=0
+            break
+    try:
+        i.save()
+    except Exception as e:
+        print "yichang!!!"
+        record_except()
+        record_log(i.code)
+        record_log(i.date)
+
+
+    
+def ArticleComputer_6_view(request):
+    start_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    print "start",start_time
+    #查询ScrapyD表中数据发布研报时间比上市时间晚60天，否则不参与计算
+    k = Scrapy_D.objects.filter(date__gt = date_time)
+    map(except_new,k)
+    end_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    result_message = "添加成功！开始时间："+start_time+"结束时间："+end_time
+    return HttpResponse(result_message)
     

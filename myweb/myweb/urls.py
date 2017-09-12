@@ -43,6 +43,9 @@ urlpatterns = [
     #4.5计算180天后的数据：价格、涨跌幅、最高涨跌幅
     url(r'^ArticleComputer_5$', 'myapp.views.ArticleComputer_5_view', name='ArticleComputer_5_view'),
     
+    #4.6计算是否为新股：发布时间必须比上市时间晚60天
+    url(r'^ArticleComputer_6$', 'myapp.views.ArticleComputer_6_view', name='ArticleComputer_6_view'),
+    
     
     #5.每天计算最新的分析师能力结果
     url(r'^Analyst_power_today$', 'myapp.views.Analyst_power_today_view', name='Analyst_power_today_view'),
